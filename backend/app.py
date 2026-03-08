@@ -85,6 +85,16 @@ async def get_course_stats():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.delete("/api/sessions/{session_id}")
+async def delete_session(session_id: str):
+    """세션 삭제"""
+    try:
+        if session_id in rag_system.session_manager.sessions:
+            del rag_system.session_manager.sessions[session_id]
+        return {"status": "ok"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.on_event("startup")
 async def startup_event():
     """Load initial documents on startup"""

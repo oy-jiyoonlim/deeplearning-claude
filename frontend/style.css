@@ -111,6 +111,26 @@ header h1 {
     margin-bottom: 0;
 }
 
+/* New Chat Button */
+.new-chat-button {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0.5rem 0;
+    width: 100%;
+    text-align: left;
+    transition: color 0.2s ease;
+}
+
+.new-chat-button:hover {
+    color: var(--primary-color);
+}
+
 /* Main Chat Area */
 .chat-main {
     flex: 1;
@@ -220,16 +240,41 @@ header h1 {
 
 /* Collapsible Sources */
 .sources-collapsible {
-    margin-top: 0.5rem;
-    font-size: 0.75rem;
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
     color: var(--text-secondary);
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 10px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
 }
 
 .sources-collapsible summary {
     cursor: pointer;
-    padding: 0.25rem 0.5rem;
+    padding: 0.25rem 0;
     user-select: none;
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    list-style: none;
+}
+
+.sources-collapsible summary::-webkit-details-marker {
+    display: none;
+}
+
+.sources-collapsible summary::before {
+    content: '▶';
+    display: inline-block;
+    margin-right: 0.4rem;
+    font-size: 0.6rem;
+    transition: transform 0.2s ease;
+}
+
+.sources-collapsible[open] summary::before {
+    transform: rotate(90deg);
 }
 
 .sources-collapsible summary:hover {
@@ -237,12 +282,42 @@ header h1 {
 }
 
 .sources-collapsible[open] summary {
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .sources-content {
-    padding: 0 0.5rem 0.25rem 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    padding: 0;
+}
+
+.source-item {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.65rem;
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.75rem;
+    transition: all 0.15s ease;
+}
+
+.source-item:hover {
+    border-color: var(--primary-color);
+    background: rgba(37, 99, 235, 0.1);
+}
+
+.source-item a {
     color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.source-item:hover a {
+    color: var(--primary-color);
 }
 
 /* Markdown formatting styles */
