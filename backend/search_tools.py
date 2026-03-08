@@ -116,6 +116,57 @@ class CourseSearchTool(Tool):
         
         return "\n\n".join(formatted)
 
+class CourseOutlineTool(Tool):
+    """코스 개요(제목, 링크, 레슨 목록) 조회 도구"""
+
+    def __init__(self, vector_store: VectorStore):
+        self.store = vector_store
+        self.last_sources = []
+
+    def get_tool_definition(self) -> Dict[str, Any]:
+        return {
+            "name": "get_course_outline",
+            "description": "Get course outline including title, link, and list of lessons. Use this when asked about course structure, lesson list, or course overview.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "course_name": {
+                        "type": "string",
+                        "description": "Course name to look up (partial matches work, e.g. 'MCP', 'Introduction')"
+                    }
+                },
+                "required": ["course_name"]
+            }
+        }
+
+    def execute(self, course_name: str) -> str:
+        outline = self.store.get_course_outline(course_name)
+
+        if not outline:
+            return f"'{course_name}'에 해당하는 코스를 찾을 수 없습니다."
+
+        # 결과 포맷팅
+        lines = [f"코스 제목: {outline['title']}"]
+        if outline.get('course_link'):
+            lines.append(f"코스 링크: {outline['course_link']}")
+
+        lines.append("\n레슨 목록:")
+        for lesson in outline.get('lessons', []):
+            lesson_num = lesson.get('lesson_number', '?')
+            lesson_title = lesson.get('title', 'Untitled')
+            lines.append(f"  - Lesson {lesson_num}: {lesson_title}")
+
+        # 소스 추적
+        if outline.get('course_link'):
+            self.last_sources = [
+                f'<a href="{outline["course_link"]}" target="_blank">{outline["title"]}</a>'
+            ]
+        else:
+            self.last_sources = [outline['title']]
+
+        return "\n".join(lines)
+
+
 class ToolManager:
     """Manages available tools for the AI"""
     

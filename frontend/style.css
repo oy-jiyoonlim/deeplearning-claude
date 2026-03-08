@@ -111,7 +111,7 @@ header h1 {
     margin-bottom: 0;
 }
 
-/* New Chat Button */
+/* New Chat Button - styled like sidebar headers */
 .new-chat-button {
     font-size: 0.875rem;
     font-weight: 600;
@@ -125,9 +125,21 @@ header h1 {
     width: 100%;
     text-align: left;
     transition: color 0.2s ease;
+    outline: none;
+}
+
+.new-chat-button::before {
+    content: '▶';
+    display: inline-block;
+    margin-right: 0.5rem;
+    font-size: 0.75rem;
 }
 
 .new-chat-button:hover {
+    color: var(--primary-color);
+}
+
+.new-chat-button:focus {
     color: var(--primary-color);
 }
 
