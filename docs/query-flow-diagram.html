@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RAG Query Flow Diagram</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    h1 {
+      text-align: center;
+      padding: 32px 16px 8px;
+      font-size: 1.6rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #64748b;
+      font-size: 0.85rem;
+      margin-bottom: 24px;
+    }
+
+    /* 레이아웃 */
+    .diagram {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      padding: 0 24px 40px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .lane {
+      flex: 1;
+      max-width: 340px;
+      position: relative;
+    }
+
+    .lane-header {
+      text-align: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      padding: 10px 0;
+      margin-bottom: 16px;
+      border-radius: 8px;
+    }
+
+    .lane-frontend .lane-header {
+      background: rgba(56, 189, 248, 0.12);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+    }
+
+    .lane-backend .lane-header {
+      background: rgba(167, 139, 250, 0.12);
+      color: #a78bfa;
+      border: 1px solid rgba(167, 139, 250, 0.2);
+    }
+
+    .lane-ai .lane-header {
+      background: rgba(52, 211, 153, 0.12);
+      color: #34d399;
+      border: 1px solid rgba(52, 211, 153, 0.2);
+    }
+
+    /* 노드 */
+    .node {
+      position: relative;
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    .node.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .node:hover {
+      transform: translateY(-2px) scale(1.02);
+      z-index: 10;
+    }
+
+    .node .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      font-size: 0.7rem;
+      font-weight: 700;
+      margin-right: 8px;
+      flex-shrink: 0;
+    }
+
+    .node .title {
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+    }
+
+    .node .detail {
+      margin-top: 6px;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      padding-left: 30px;
+    }
+
+    .node .file-ref {
+      display: inline-block;
+      margin-top: 4px;
+      font-size: 0.68rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+
+    /* 프론트엔드 노드 */
+    .lane-frontend .node {
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+    }
+
+    .lane-frontend .node:hover {
+      border-color: rgba(56, 189, 248, 0.5);
+      box-shadow: 0 4px 20px rgba(56, 189, 248, 0.15);
+    }
+
+    .lane-frontend .step-num {
+      background: rgba(56, 189, 248, 0.2);
+      color: #38bdf8;
+    }
+
+    .lane-frontend .file-ref {
+      background: rgba(56, 189, 248, 0.1);
+      color: #7dd3fc;
+    }
+
+    /* 백엔드 노드 */
+    .lane-backend .node {
+      background: rgba(167, 139, 250, 0.08);
+      border: 1px solid rgba(167, 139, 250, 0.2);
+    }
+
+    .lane-backend .node:hover {
+      border-color: rgba(167, 139, 250, 0.5);
+      box-shadow: 0 4px 20px rgba(167, 139, 250, 0.15);
+    }
+
+    .lane-backend .step-num {
+      background: rgba(167, 139, 250, 0.2);
+      color: #a78bfa;
+    }
+
+    .lane-backend .file-ref {
+      background: rgba(167, 139, 250, 0.1);
+      color: #c4b5fd;
+    }
+
+    /* AI 노드 */
+    .lane-ai .node {
+      background: rgba(52, 211, 153, 0.08);
+      border: 1px solid rgba(52, 211, 153, 0.2);
+    }
+
+    .lane-ai .node:hover {
+      border-color: rgba(52, 211, 153, 0.5);
+      box-shadow: 0 4px 20px rgba(52, 211, 153, 0.15);
+    }
+
+    .lane-ai .step-num {
+      background: rgba(52, 211, 153, 0.2);
+      color: #34d399;
+    }
+
+    .lane-ai .file-ref {
+      background: rgba(52, 211, 153, 0.1);
+      color: #6ee7b7;
+    }
+
+    /* 분기 노드 */
+    .node.decision {
+      background: rgba(251, 191, 36, 0.08);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+    }
+
+    .node.decision:hover {
+      border-color: rgba(251, 191, 36, 0.6);
+      box-shadow: 0 4px 20px rgba(251, 191, 36, 0.15);
+    }
+
+    .node.decision .step-num {
+      background: rgba(251, 191, 36, 0.2);
+      color: #fbbf24;
+    }
+
+    /* 화살표 커넥터 */
+    .connector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 28px;
+      position: relative;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .connector.visible { opacity: 1; }
+
+    .connector .arrow {
+      width: 2px;
+      height: 100%;
+      position: relative;
+    }
+
+    .lane-frontend .connector .arrow { background: rgba(56, 189, 248, 0.3); }
+    .lane-backend .connector .arrow { background: rgba(167, 139, 250, 0.3); }
+    .lane-ai .connector .arrow { background: rgba(52, 211, 153, 0.3); }
+
+    .connector .arrow::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+    }
+
+    .lane-frontend .connector .arrow::after { border-top: 6px solid rgba(56, 189, 248, 0.5); }
+    .lane-backend .connector .arrow::after { border-top: 6px solid rgba(167, 139, 250, 0.5); }
+    .lane-ai .connector .arrow::after { border-top: 6px solid rgba(52, 211, 153, 0.5); }
+
+    /* 크로스-레인 화살표 */
+    .cross-arrow {
+      position: absolute;
+      height: 2px;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      z-index: 5;
+    }
+
+    .cross-arrow.visible { opacity: 1; }
+
+    .cross-arrow .line {
+      height: 100%;
+      width: 100%;
+      position: relative;
+    }
+
+    .cross-arrow .label {
+      position: absolute;
+      top: -18px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.65rem;
+      white-space: nowrap;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+
+    .cross-arrow.to-right .line::after {
+      content: '';
+      position: absolute;
+      right: -1px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+    }
+
+    .cross-arrow.to-left .line::after {
+      content: '';
+      position: absolute;
+      left: -1px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+    }
+
+    /* 데이터 패킷 애니메이션 */
+    .packet {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    /* 활성 상태 강조 */
+    .node.active {
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    }
+
+    .lane-frontend .node.active { box-shadow: 0 0 25px rgba(56, 189, 248, 0.3); }
+    .lane-backend .node.active { box-shadow: 0 0 25px rgba(167, 139, 250, 0.3); }
+    .lane-ai .node.active { box-shadow: 0 0 25px rgba(52, 211, 153, 0.3); }
+    .node.decision.active { box-shadow: 0 0 25px rgba(251, 191, 36, 0.3); }
+
+    /* 컨트롤 */
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .controls button {
+      padding: 10px 24px;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-play {
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      color: white;
+    }
+
+    .btn-play:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4); }
+
+    .btn-reset {
+      background: rgba(100, 116, 139, 0.2);
+      color: #94a3b8;
+      border: 1px solid rgba(100, 116, 139, 0.3) !important;
+    }
+
+    .btn-reset:hover { background: rgba(100, 116, 139, 0.3); }
+
+    /* SVG 오버레이 */
+    .svg-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .svg-overlay path {
+      fill: none;
+      stroke-width: 2;
+      stroke-dasharray: 6 4;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .svg-overlay path.visible { opacity: 0.6; }
+
+    .svg-overlay .arrow-marker {
+      fill: currentColor;
+    }
+
+    /* 범례 */
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    /* 반응형 */
+    @media (max-width: 900px) {
+      .diagram { flex-direction: column; align-items: center; }
+      .lane { max-width: 100%; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <h1>RAG Chatbot — Query Flow</h1>
+  <p class="subtitle">사용자 질문이 처리되는 전체 흐름</p>
+
+  <div class="controls">
+    <button class="btn-play" onclick="playAnimation()">&#9654; 애니메이션 재생</button>
+    <button class="btn-reset" onclick="resetAnimation()">초기화</button>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#38bdf8"></div> Frontend</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div> Backend</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#34d399"></div> AI / Search</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div> Decision</div>
+  </div>
+
+  <div class="diagram" id="diagram">
+    <!-- Frontend Lane -->
+    <div class="lane lane-frontend">
+      <div class="lane-header">Frontend</div>
+
+      <div class="node" data-step="1">
+        <div class="title"><span class="step-num">1</span>사용자 입력</div>
+        <div class="detail">질문 입력 후 Enter 또는 Send 클릭</div>
+        <span class="file-ref">script.js:45</span>
+      </div>
+
+      <div class="connector"><div class="arrow"></div></div>
+
+      <div class="node" data-step="2">
+        <div class="title"><span class="step-num">2</span>sendMessage()</div>
+        <div class="detail">
+          입력 비활성화 + 로딩 애니메이션 표시<br>
+          POST /api/query 전송
+        </div>
+        <span class="file-ref">script.js:62-72</span>
+      </div>
+
+      <div class="connector"><div class="arrow"></div></div>
+
+      <div class="node" data-step="2b" style="min-height: 52px;">
+        <div class="title"><span class="step-num">→</span>HTTP Request</div>
+        <div class="detail">{ query, session_id }</div>
+      </div>
+
+      <!-- 빈 공간 (백엔드/AI 처리 중 대기) -->
+      <div style="height: 340px;"></div>
+
+      <div class="connector"><div class="arrow"></div></div>
+
+      <div class="node" data-step="11">
+        <div class="title"><span class="step-num">11</span>응답 수신</div>
+        <div class="detail">{ answer, sources, session_id }</div>
+        <span class="file-ref">script.js:76-85</span>
+      </div>
+
+      <div class="connector"><div class="arrow"></div></div>
+
+      <div class="node" data-step="12">
+        <div class="title"><span class="step-num">12</span>렌더링</div>
+        <div class="detail">
+          marked.parse()로 마크다운 → HTML<br>
+          출처를 접을 수 있는 &lt;details&gt;로 표시
+        </div>
+        <span class="file-ref">script.js:113-138</span>
+      </div>
+    </div>
+
+    <!-- Backend Lane -->
+    <div class="lane lane-backend">
+      <div class="lane-header">Backend</div>
+
+      <div style="height: 148px;"></div>
+
+      <div class="node" data-step="3">
+        <div class="title"><span class="step-num">3</span>API Router</div>
+        <div class="detail">
+          POST /api/query 수신<br>
+          session_id 없으면 새 세션 생성
+        </div>
+        <span class="file-ref">app.py:57-74</span>
+      </div>
+
+      <div class="connector"><div class="arrow"></div></div>
+
+      <div class="node" data-step="4">
+        <div class="title"><span class="step-num">4</span>RAGSystem.query()</div>
+        <div class="detail">
+          프롬프트 래핑: "Answer this question about course materials: {query}"
+        </div>
+        <span class="file-ref">rag_system.py:102-114</span>
+      </div>
+
+      <div class="connector"><div class="arrow"></div></div>
+
+      <div class="node" data-step="5">
+        <div class="title"><span class="step-num">5</span>세션 이력 조회</div>
+        <div class="detail">
+          SessionManager에서 이전 대화 이력 가져오기 (최대 2 교환)
+        </div>
+        <span class="file-ref">session_manager.py:42-56</span>
+      </div>
+
+      <div class="connector"><div class="arrow"></div></div>
+
+      <div class="node" data-step="10">
+        <div class="title"><span class="step-num">10</span>후처리</div>
+        <div class="detail">
+          sources 수집 + 리셋<br>
+          세션에 Q&A 이력 저장
+        </div>
+        <span class="file-ref">rag_system.py:129-140</span>
+      </div>
+    </div>
+
+    <!-- AI Lane -->
+    <div class="lane lane-ai">
+      <div class="lane-header">AI / Search</div>
+
+      <div style="height: 290px;"></div>
+
+      <div class="node" data-step="6">
+        <div class="title"><span class="step-num">6</span>AIGenerator</div>
+        <div class="detail">
+          시스템 프롬프트 + 대화 이력 구성<br>
+          tools: [search_course_content]
+        </div>
+        <span class="file-ref">ai_generator.py:43-80</span>
+      </div>
+
+      <div class="connector"><div class="arrow"></div></div>
+
+      <div class="node" data-step="7">
+        <div class="title"><span class="step-num">7</span>Claude API 호출</div>
+        <div class="detail">
+          claude-sonnet-4 | temp: 0 | max_tokens: 800<br>
+          tool_choice: auto
+        </div>
+        <span class="file-ref">ai_generator.py:80</span>
+      </div>
+
+      <div class="connector"><div class="arrow"></div></div>
+
+      <div class="node decision" data-step="8">
+        <div class="title"><span class="step-num">8</span>Tool Use 판단</div>
+        <div class="detail">
+          stop_reason === "tool_use" ?<br>
+          <strong style="color:#34d399">Yes →</strong> 도구 실행<br>
+          <strong style="color:#f87171">No →</strong> 바로 응답 반환
+        </div>
+        <span class="file-ref">ai_generator.py:83-87</span>
+      </div>
+
+      <div class="connector"><div class="arrow"></div></div>
+
+      <div class="node" data-step="9">
+        <div class="title"><span class="step-num">9</span>벡터 검색 실행</div>
+        <div class="detail">
+          CourseSearchTool → VectorStore.search()<br>
+          ChromaDB 의미론적 검색 (Top 5)<br>
+          결과로 Claude 2차 호출 → 최종 답변
+        </div>
+        <span class="file-ref">search_tools.py:52-86</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STEP_DELAY = 400;
+
+    const steps = [
+      { step: "1",  delay: 0 },
+      { step: "2",  delay: 1 },
+      { step: "2b", delay: 2 },
+      { step: "3",  delay: 3 },
+      { step: "4",  delay: 4 },
+      { step: "5",  delay: 5 },
+      { step: "6",  delay: 6 },
+      { step: "7",  delay: 7 },
+      { step: "8",  delay: 8 },
+      { step: "9",  delay: 9 },
+      { step: "10", delay: 10 },
+      { step: "11", delay: 11 },
+      { step: "12", delay: 12 },
+    ];
+
+    function showAllInstant() {
+      document.querySelectorAll('.node').forEach(n => n.classList.add('visible'));
+      document.querySelectorAll('.connector').forEach(c => c.classList.add('visible'));
+    }
+
+    function resetAnimation() {
+      document.querySelectorAll('.node').forEach(n => {
+        n.classList.remove('visible', 'active');
+      });
+      document.querySelectorAll('.connector').forEach(c => {
+        c.classList.remove('visible');
+      });
+    }
+
+    function playAnimation() {
+      resetAnimation();
+
+      let prevNode = null;
+
+      steps.forEach(({ step, delay }) => {
+        setTimeout(() => {
+          const node = document.querySelector(`[data-step="${step}"]`);
+          if (!node) return;
+
+          // 이전 노드 비활성화
+          if (prevNode) prevNode.classList.remove('active');
+
+          // 현재 노드 활성화
+          node.classList.add('visible', 'active');
+          prevNode = node;
+
+          // 이 노드 앞의 커넥터도 표시
+          const prevSibling = node.previousElementSibling;
+          if (prevSibling && prevSibling.classList.contains('connector')) {
+            prevSibling.classList.add('visible');
+          }
+
+          // 뷰포트에 보이게 스크롤
+          node.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, delay * STEP_DELAY);
+      });
+
+      // 마지막 노드 활성 해제
+      setTimeout(() => {
+        if (prevNode) prevNode.classList.remove('active');
+      }, (steps.length + 1) * STEP_DELAY);
+    }
+
+    // 페이지 로드 시 모두 표시
+    window.addEventListener('DOMContentLoaded', showAllInstant);
+  </script>
+</body>
+</html>
