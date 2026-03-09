@@ -64,21 +64,28 @@ class TestSingleRoundToolCall:
         mock_tool_manager.execute_tool.return_value = "검색 결과 데이터"
 
         # 첫 번째: tool_use 응답, 두 번째: 최종 텍스트 응답
-        tool_response = make_response("tool_use", [
-            make_tool_use_block("tool_1", "search_course_content", {"query": "테스트"})
-        ])
+        tool_response = make_response(
+            "tool_use",
+            [
+                make_tool_use_block(
+                    "tool_1", "search_course_content", {"query": "테스트"}
+                )
+            ],
+        )
         final_response = make_response("end_turn", [make_text_block("최종 답변")])
         mock_client.messages.create.side_effect = [tool_response, final_response]
 
         result = gen.generate_response(
             "테스트 질문",
             tools=[{"name": "search_course_content"}],
-            tool_manager=mock_tool_manager
+            tool_manager=mock_tool_manager,
         )
 
         assert result == "최종 답변"
         assert mock_client.messages.create.call_count == 2
-        mock_tool_manager.execute_tool.assert_called_once_with("search_course_content", query="테스트")
+        mock_tool_manager.execute_tool.assert_called_once_with(
+            "search_course_content", query="테스트"
+        )
 
 
 class TestMultiRoundToolCall:
@@ -90,19 +97,33 @@ class TestMultiRoundToolCall:
         mock_tool_manager.execute_tool.side_effect = ["outline 결과", "content 결과"]
 
         # 초기: tool_use, 2차: tool_use, 3차: 최종 텍스트
-        first_tool = make_response("tool_use", [
-            make_tool_use_block("tool_1", "get_course_outline", {"course_name": "AI 기초"})
-        ])
-        second_tool = make_response("tool_use", [
-            make_tool_use_block("tool_2", "search_course_content", {"query": "레슨 4 주제"})
-        ])
+        first_tool = make_response(
+            "tool_use",
+            [
+                make_tool_use_block(
+                    "tool_1", "get_course_outline", {"course_name": "AI 기초"}
+                )
+            ],
+        )
+        second_tool = make_response(
+            "tool_use",
+            [
+                make_tool_use_block(
+                    "tool_2", "search_course_content", {"query": "레슨 4 주제"}
+                )
+            ],
+        )
         final_response = make_response("end_turn", [make_text_block("종합 답변")])
-        mock_client.messages.create.side_effect = [first_tool, second_tool, final_response]
+        mock_client.messages.create.side_effect = [
+            first_tool,
+            second_tool,
+            final_response,
+        ]
 
         result = gen.generate_response(
             "복합 질문",
             tools=[{"name": "get_course_outline"}, {"name": "search_course_content"}],
-            tool_manager=mock_tool_manager
+            tool_manager=mock_tool_manager,
         )
 
         assert result == "종합 답변"
@@ -110,7 +131,9 @@ class TestMultiRoundToolCall:
         assert mock_tool_manager.execute_tool.call_count == 2
 
         # 두 번째 호출에는 첫 번째 결과가 메시지에 포함되어야 함
-        second_call_messages = mock_client.messages.create.call_args_list[1].kwargs["messages"]
+        second_call_messages = mock_client.messages.create.call_args_list[1].kwargs[
+            "messages"
+        ]
         # assistant + tool_result 메시지가 포함되어 있어야 함
         assert len(second_call_messages) >= 3  # user + assistant + tool_result
 
@@ -124,20 +147,26 @@ class TestMaxRoundsEnforcement:
         mock_tool_manager.execute_tool.side_effect = ["결과1", "결과2"]
 
         # 2라운드 모두 tool_use를 시도하는 시나리오
-        first_tool = make_response("tool_use", [
-            make_tool_use_block("tool_1", "search_course_content", {"query": "q1"})
-        ])
-        second_tool = make_response("tool_use", [
-            make_tool_use_block("tool_2", "search_course_content", {"query": "q2"})
-        ])
+        first_tool = make_response(
+            "tool_use",
+            [make_tool_use_block("tool_1", "search_course_content", {"query": "q1"})],
+        )
+        second_tool = make_response(
+            "tool_use",
+            [make_tool_use_block("tool_2", "search_course_content", {"query": "q2"})],
+        )
         # 마지막 라운드에서는 tools 없이 호출되므로 텍스트 응답
         final_response = make_response("end_turn", [make_text_block("강제 종료 답변")])
-        mock_client.messages.create.side_effect = [first_tool, second_tool, final_response]
+        mock_client.messages.create.side_effect = [
+            first_tool,
+            second_tool,
+            final_response,
+        ]
 
         result = gen.generate_response(
             "질문",
             tools=[{"name": "search_course_content"}],
-            tool_manager=mock_tool_manager
+            tool_manager=mock_tool_manager,
         )
 
         assert result == "강제 종료 답변"
@@ -160,25 +189,31 @@ class TestToolExecutionError:
         mock_tool_manager = MagicMock()
         mock_tool_manager.execute_tool.side_effect = RuntimeError("DB 연결 실패")
 
-        tool_response = make_response("tool_use", [
-            make_tool_use_block("tool_1", "search_course_content", {"query": "test"})
-        ])
+        tool_response = make_response(
+            "tool_use",
+            [make_tool_use_block("tool_1", "search_course_content", {"query": "test"})],
+        )
         final_response = make_response("end_turn", [make_text_block("에러 대응 답변")])
         mock_client.messages.create.side_effect = [tool_response, final_response]
 
         result = gen.generate_response(
             "질문",
             tools=[{"name": "search_course_content"}],
-            tool_manager=mock_tool_manager
+            tool_manager=mock_tool_manager,
         )
 
         assert result == "에러 대응 답변"
 
         # tool_result에 에러 문자열이 포함되어야 함
-        second_call_messages = mock_client.messages.create.call_args_list[1].kwargs["messages"]
+        second_call_messages = mock_client.messages.create.call_args_list[1].kwargs[
+            "messages"
+        ]
         tool_result_msg = second_call_messages[-1]  # 마지막 메시지가 tool_result
         assert tool_result_msg["role"] == "user"
-        assert "Tool execution error: DB 연결 실패" in tool_result_msg["content"][0]["content"]
+        assert (
+            "Tool execution error: DB 연결 실패"
+            in tool_result_msg["content"][0]["content"]
+        )
 
 
 class TestConversationHistory:
