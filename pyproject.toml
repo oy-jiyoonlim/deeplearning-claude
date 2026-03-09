@@ -18,8 +18,13 @@ dependencies = [
 dev = [
     "httpx>=0.28.0",
     "pytest>=9.0.2",
+    "black>=25.1.0",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["backend/tests"]
 pythonpath = ["backend"]
+
+[tool.black]
+line-length = 88
+target-version = ["py313"]

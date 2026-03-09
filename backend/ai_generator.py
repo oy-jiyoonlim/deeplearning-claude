@@ -1,6 +1,7 @@
 import anthropic
 from typing import List, Optional, Dict, Any
 
+
 class AIGenerator:
     """Handles interactions with Anthropic's Claude API for generating responses"""
 
@@ -39,23 +40,22 @@ Provide only the direct answer to what was asked.
         self.max_tool_rounds = max_tool_rounds
 
         # Pre-build base API parameters
-        self.base_params = {
-            "model": self.model,
-            "temperature": 0,
-            "max_tokens": 800
-        }
+        self.base_params = {"model": self.model, "temperature": 0, "max_tokens": 800}
 
     def _extract_text(self, response) -> str:
         """응답에서 텍스트 블록 추출"""
         for block in response.content:
-            if hasattr(block, 'text'):
+            if hasattr(block, "text"):
                 return block.text
         return ""
 
-    def generate_response(self, query: str,
-                         conversation_history: Optional[str] = None,
-                         tools: Optional[List] = None,
-                         tool_manager=None) -> str:
+    def generate_response(
+        self,
+        query: str,
+        conversation_history: Optional[str] = None,
+        tools: Optional[List] = None,
+        tool_manager=None,
+    ) -> str:
         """
         Generate AI response with optional tool usage and conversation context.
 
@@ -80,7 +80,7 @@ Provide only the direct answer to what was asked.
         api_params = {
             **self.base_params,
             "messages": [{"role": "user", "content": query}],
-            "system": system_content
+            "system": system_content,
         }
 
         # Add tools if available
@@ -98,7 +98,9 @@ Provide only the direct answer to what was asked.
         # Return direct response
         return self._extract_text(response)
 
-    def _handle_tool_execution(self, initial_response, base_params: Dict[str, Any], tool_manager):
+    def _handle_tool_execution(
+        self, initial_response, base_params: Dict[str, Any], tool_manager
+    ):
         """
         루프 기반 다중 라운드 도구 호출 처리.
 
@@ -125,21 +127,23 @@ Provide only the direct answer to what was asked.
                         result = tool_manager.execute_tool(block.name, **block.input)
                     except Exception as e:
                         result = f"Tool execution error: {str(e)}"
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
-                        "content": result
-                    })
+                    tool_results.append(
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": block.id,
+                            "content": result,
+                        }
+                    )
 
             messages.append({"role": "user", "content": tool_results})
 
             # 마지막 라운드에서는 tools 제외 → Claude가 반드시 텍스트로 응답
-            is_last_round = (round == self.max_tool_rounds - 1)
+            is_last_round = round == self.max_tool_rounds - 1
 
             next_params = {
                 **self.base_params,
                 "messages": messages,
-                "system": base_params["system"]
+                "system": base_params["system"],
             }
             if not is_last_round and "tools" in base_params:
                 next_params["tools"] = base_params["tools"]
